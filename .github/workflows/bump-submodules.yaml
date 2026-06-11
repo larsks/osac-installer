@@ -2,23 +2,30 @@ name: Bump submodules
 
 on:
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: "17 */3 * * *"
   workflow_dispatch:
 
 jobs:
   bump:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/create-github-app-token
+        id: app-token
+        with:
+          client-id: ${{ secrets.OSAC_DEV_CLIENT_ID }}
+          private-key: ${{ secrets.OSAC_DEV_APP_PRIVATE_KEY }}
+          persist-credentials: false
+
       - uses: actions/checkout@v4
         with:
           submodules: true
           fetch-depth: 0
-          token: ${{ secrets.OSAC_BOT_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Check latest commits have published images
         id: find
         env:
-          GH_TOKEN: ${{ secrets.OSAC_BOT_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
@@ -93,7 +100,7 @@ jobs:
       - name: Create or update PR
         if: steps.update.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.OSAC_BOT_PAT }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           BRANCH="auto/bump-submodules"
           git config user.name "osac-dev-bot"
